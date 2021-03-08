@@ -40,7 +40,7 @@ class Handler(object):
         self.mqtt_connected = False
         self.mqtt_online = False
         self.mqtt_published_error = False
-        self.last_publish_time = datetime.now()
+        self.last_publish_time = datetime(1970, 1, 1)
         self.debug = False
 
         if os.environ.get('DEBUG'):
@@ -173,19 +173,19 @@ class Handler(object):
     def loop(self):
         this_time = datetime.now()
         if (this_time - self.last_publish_time).total_seconds() >= self.config['publish']['interval']:
-            self.last_publish_time = this_time
-            self.publish()
+            if self.publish():
+                self.last_publish_time = this_time
             time.sleep(self.config['publish']['min_wait'])
         else:
             time.sleep(round(self.config['publish']['interval'] - (this_time - self.last_publish_time).total_seconds(), 0))
 
     def publish(self):
         if self.terminated:
-            return
+            return False
         if not self.mqtt_connected:
-            return
+            return False
         if not self.check_vcontrold(True):
-            return
+            return False
 
         print("Publish values to mqtt...", end='', flush=True)
         try:
@@ -197,7 +197,8 @@ class Handler(object):
                 if len(out) == 0:
                     print(" failed", flush=True, file=sys.stderr)
                     print("Empty result for command {}".format(cmd), flush=True, file=sys.stderr)
-                    return
+
+                    return False
                 else:
                     if self.debug:
                         print("Read from vcontrold: {}".format(out))
@@ -222,11 +223,14 @@ class Handler(object):
                 self.mqtt_client.publish(self.config['mqtt']['pub_prefix'] + '/error', payload='', qos=0, retain=False)
                 self.mqtt_published_error = False
 
+            return True
         except Exception as e:
             print(" failed", flush=True)
             print(str(e), flush=True, file=sys.stderr)
             self.mqtt_published_error = True
             self.mqtt_client.publish(self.config['mqtt']['pub_prefix'] + '/error', payload=str(e), qos=0, retain=False)
+
+        return False
 
     def on_message(self,client,userdata,msg):
         '''event handler for mqtt client'''
