@@ -144,6 +144,9 @@ class Handler(object):
             except (OSError, EOFError) as err:
                 print(" failed", flush=True)
                 print("Connection failed: {}".format(str(err)), flush=True, file=sys.stderr)
+                self.mqtt_published_error = True
+                self.mqtt_client.publish(self.config['mqtt']['pub_prefix'] + '/error', payload=str(e), qos=0, retain=False)
+                self.publish_offline()
 
             time.sleep(10)
         return False
