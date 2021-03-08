@@ -104,7 +104,8 @@ class Handler(object):
             self.mqtt_connected = True
             # subscribe for command topic(s)
             #client.subscribe('vcontrol/setBetriebsartTo')
-            self.check_vcontrold(True)
+            if self.config['vcontrold']['keepalive']:
+                self.check_vcontrold(True)
 
     def on_disconnect(self,client, userdata, rc):
         '''event handler for mqtt client'''
@@ -166,7 +167,8 @@ class Handler(object):
         except (OSError, EOFError) as err:
             print("Connection to vcontrold failed: {}".format(str(err)), flush=True, file=sys.stderr)
 
-        self.publish_offline()
+        if self.config['vcontrold']['keepalive']:
+            self.publish_offline()
 
         if reconnect:
             return self.connect_vcontrold()
@@ -250,6 +252,9 @@ class Handler(object):
             if self.mqtt_published_error:
                 self.mqtt_client.publish(self.config['mqtt']['pub_prefix'] + '/error', payload='', qos=0, retain=False)
                 self.mqtt_published_error = False
+
+            if not self.config['vcontrold']['keepalive']:
+                self.disconnect_vcontrold()
 
             return True
         except Exception as e:
