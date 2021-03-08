@@ -173,6 +173,34 @@ class Handler(object):
 
         return False
 
+    def disconnect_vcontrold(self, force = False):
+        if not force:
+            print("Close connection to vcontrold...", end='', flush=True)
+        else:
+            print(" close vcontrold connection...", end='', flush=True)
+        try:
+            if not force and self.check_vcontrold():
+                self.telnet_client.write(b"quit\n")
+                out = self.telnet_client.read_until(b"good bye",10)
+                if len(out) == 0:
+                    print(" failed", flush=True, file=sys.stderr)
+                else:
+                    if self.debug:
+                        print("Read from vcontrold: {}".format(out))
+        except (OSError, EOFError) as err:
+            print(" failed", flush=True)
+            print(str(err), flush=True, file=sys.stderr)
+            self.mqtt_published_error = True
+            self.mqtt_client.publish(self.config['mqtt']['pub_prefix'] + '/error', payload=str(err), qos=0, retain=False)
+
+        if self.config['vcontrold']['keepalive']:
+            self.publish_offline()
+        if self.telnet_client != None:
+            self.telnet_client.close();
+        self.telnet_client = None
+        if not force:
+            print(" successful", flush=True)
+
     def loop(self):
         this_time = datetime.now()
         if (this_time - self.last_publish_time).total_seconds() >= self.config['publish']['interval']:
@@ -209,10 +237,7 @@ class Handler(object):
                     # Check if we received an error
                     search = re.search(r"^ERR:", out.decode('ascii'))
                     if search != None:
-                        # Got an error, trigger reconnect to vcontrold by closing the connection here
-                        self.telnet_client.close();
-                        self.telnet_client = None
-                        self.publish_offline()
+                        self.disconnect_vcontrold(True)
                         raise Exception("command: {}, result: {}".format(cmd, out.decode('ascii')))
 
                     search = re.search(r"^-?[0-9]+(\.?[0-9]+)?", out.decode('ascii'))
@@ -242,15 +267,7 @@ class Handler(object):
     def terminate(self):
         self.terminated = True
 
-        if self.telnet_client != None:
-            print("Close connection to vcontrold", flush=True)
-            if self.check_vcontrold:
-                try:
-                    self.telnet_client.write(b"quit\n")
-                except (OSError, EOFError):
-                    pass
-            self.telnet_client.close()
-            self.telnet_client = None
+        self.disconnect_vcontrold()
 
         print("Close connection to mqtt", flush=True)
         self.publish_offline()
