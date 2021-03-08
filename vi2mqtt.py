@@ -56,8 +56,8 @@ class Handler(object):
                 with open(self.config_file) as yaml_data_file:
                     cfg = yaml.load(yaml_data_file, Loader=yaml.SafeLoader)
                     merge_dict(self.config, cfg)
-            except Exception as e:
-                print(str(e), flush=True, file=sys.stderr)
+            except Exception as err:
+                print(str(err), flush=True, file=sys.stderr)
 
         if os.environ.get('MQTT_HOST'):
             self.config['mqtt']['host'] = os.environ.get('MQTT_HOST')
@@ -146,7 +146,7 @@ class Handler(object):
                 print(" failed", flush=True)
                 print("Connection failed: {}".format(str(err)), flush=True, file=sys.stderr)
                 self.mqtt_published_error = True
-                self.mqtt_client.publish(self.config['mqtt']['pub_prefix'] + '/error', payload=str(e), qos=0, retain=False)
+                self.mqtt_client.publish(self.config['mqtt']['pub_prefix'] + '/error', payload=str(err), qos=0, retain=False)
                 self.publish_offline()
 
             time.sleep(10)
@@ -257,11 +257,11 @@ class Handler(object):
                 self.disconnect_vcontrold()
 
             return True
-        except Exception as e:
+        except Exception as err:
             print(" failed", flush=True)
-            print(str(e), flush=True, file=sys.stderr)
+            print(str(err), flush=True, file=sys.stderr)
             self.mqtt_published_error = True
-            self.mqtt_client.publish(self.config['mqtt']['pub_prefix'] + '/error', payload=str(e), qos=0, retain=False)
+            self.mqtt_client.publish(self.config['mqtt']['pub_prefix'] + '/error', payload=str(err), qos=0, retain=False)
 
         return False
 
@@ -296,8 +296,8 @@ signal.signal(signal.SIGINT, cleanup)
 
 try:
     handler.connect()
-except Exception as e:
-    print(str(e), flush=True, file=sys.stderr)
+except Exception as err:
+    print(str(err), flush=True, file=sys.stderr)
     exit(1)
 
 print("Start event loop", flush=True)
