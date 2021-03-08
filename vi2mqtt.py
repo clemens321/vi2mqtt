@@ -39,7 +39,7 @@ class Handler(object):
         self.mqtt_client = None
         self.mqtt_connected = False
         self.mqtt_online = False
-        self.mqtt_published_error = False
+        self.mqtt_published_error = True
         self.last_publish_time = datetime(1970, 1, 1)
         self.debug = False
 
