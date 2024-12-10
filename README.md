@@ -1,3 +1,10 @@
+# ARCHIVED
+This was part of a set with ESPEasy (ser2net), vcontrold-docker and vi2mqtt.
+
+I replaced the ESPEasy with esphome and alexandre's add-on
+- https://gist.github.com/clemens321/9061f705d44eb18423470d9df2d07219
+- https://github.com/Alexandre-io/homeassistant-vcontrol
+
 # vi2mqtt
 Connector between mqtt broker and vcontrold for Viessmann heating devices.
 
